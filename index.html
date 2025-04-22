@@ -20,7 +20,7 @@
       window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js'
     );
-    fbq('init', '1391288831895635');        // ← Tu nuevo Pixel ID
+    fbq('init', '1391288831895635');
     fbq('track', 'ViewContent');
   </script>
 </head>
@@ -54,7 +54,7 @@
         'https://geo.ipify.org/api/v2/country,city,asn?apiKey=at_bm13j7tXoeE9XJOVK83yQAJO6JPrg'
       );
       const j = await resp.json();
-      ip      = j.ip || '';
+      ip      = j.ip      || '';
       country = j.location?.country || '';
       region  = j.location?.region  || '';
       city    = j.location?.city    || '';
