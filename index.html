@@ -4,15 +4,8 @@
   <meta charset="UTF-8">
   <title>Landing FB Pixel + _fbc/_fbp</title>
 
-  <!-- 0) Crear _fbc si fbclid está en URL -->
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const fbclid = urlParams.get('fbclid');
-    if (fbclid) {
-      const ts = Date.now();
-      document.cookie = `_fbc=fb.1.${ts}.${fbclid}; path=/; max-age=${90*24*3600}`;
-    }
-  </script>
+
+
 
   <!-- 1) Meta Pixel -->
   <script>
