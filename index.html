@@ -1,63 +1,70 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Landing con Facebook Pixel</title>
+  <meta charset="UTF-8">
+  <title>Landing FB Pixel + _fbc/_fbp</title>
 
-  <!-- === Meta Pixel de Facebook === -->
+  <!-- 0) Crear _fbc si fbclid está en URL -->
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const fbclid = urlParams.get('fbclid');
+    if (fbclid) {
+      const ts = Date.now();
+      document.cookie = `_fbc=fb.1.${ts}.${fbclid}; path=/; max-age=${90*24*3600}`;
+    }
+  </script>
+
+  <!-- 1) Meta Pixel -->
   <script>
     const PIXEL_ID = '1391288831895635';
     !function(f,b,e,v,n,t,s){
-      if(f.fbq) return;
-      n=f.fbq=function(){ n.callMethod?
-        n.callMethod.apply(n, arguments):n.queue.push(arguments);
-      };
-      if(!f._fbq) f._fbq=n;
-      n.push=n; n.loaded=!0; n.version='2.0';
-      n.queue=[];
-      t=b.createElement(e); t.async=!0;
+      if(f.fbq) return; n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq) f._fbq=n; n.push=n; n.loaded=!0; n.version='2.0';
+      n.queue=[]; t=b.createElement(e); t.async=!0;
       t.src=v; s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s);
-    }(window, document, 'script',
-      'https://connect.facebook.net/en_US/fbevents.js'
-    );
+    }(window, document, 'script','https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', PIXEL_ID);
+    fbq('track', 'ViewContent');
   </script>
-  <!-- / Meta Pixel -->
 </head>
 <body>
+  <h1>Prueba _fbc y _fbp</h1>
+  <p>Revisa CloudWatch Logs para ver los valores de <code>_fbc</code> y <code>_fbp</code>.</p>
 
-  <h1>Bienvenido</h1>
-  <p>Estamos capturando tu evento ViewContent y la cookie <code>_fbc</code>.</p>
-
+  <!-- 2) Enviar al backend extrayendo ambas cookies -->
   <script>
-    // 1) Disparar ViewContent a Facebook
-    fbq('track', 'ViewContent');
+    const API_URL = 'https://jxfyduclu7.execute-api.us-east-2.amazonaws.com/Capture_fbc';
 
-    // 2) Enviar evento + cookie _fbc a nuestro backend
-    (function(){
-      const API_URL = 'https://jxfyydlcu7.execute-api.us-east-2.amazonaws.com/Capture_fbc';
+    // Función helper para parsear document.cookie en un objeto
+    function parseCookies() {
+      return document.cookie
+        .split('; ')
+        .reduce((cookies, kv) => {
+          const [name, value] = kv.split('=');
+          cookies[name] = value;
+          return cookies;
+        }, {});
+    }
 
-      const payload = {
-        event: 'ViewContent',
-        timestamp: new Date().toISOString()
-      };
+    const cookies = parseCookies();
+    const payload = {
+      event: 'ViewContent',
+      timestamp: new Date().toISOString(),
+      _fbc: cookies._fbc || null,
+      _fbp: cookies._fbp || null
+    };
 
-      fetch(API_URL, {
-        method: 'POST',
-        credentials: 'include',            // ← envía cookies (_fbc)
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(r => r.json())
-      .then(console.log)
-      .catch(console.error);
-    })();
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(console.log)
+    .catch(console.error);
   </script>
-
 </body>
 </html>
+
