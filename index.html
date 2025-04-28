@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Landing FB Pixel + _fbc/_fbp</title>
-
-
-
 
   <!-- 1) Meta Pixel -->
   <script>
@@ -17,7 +14,9 @@
       n.queue=[]; t=b.createElement(e); t.async=!0;
       t.src=v; s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s);
-    }(window, document, 'script','https://connect.facebook.net/en_US/fbevents.js');
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js'
+    );
     fbq('init', PIXEL_ID);
     fbq('track', 'ViewContent');
   </script>
@@ -26,38 +25,42 @@
   <h1>Prueba _fbc y _fbp</h1>
   <p>Revisa CloudWatch Logs para ver los valores de <code>_fbc</code> y <code>_fbp</code>.</p>
 
-  <!-- 2) Enviar al backend extrayendo ambas cookies -->
+  <!-- 2) Esperar a load antes de leer cookies y enviar -->
   <script>
     const API_URL = 'https://jxfyydlcu7.execute-api.us-east-2.amazonaws.com/prod/Capture_fbc';
 
-    // Función helper para parsear document.cookie en un objeto
     function parseCookies() {
       return document.cookie
         .split('; ')
-        .reduce((cookies, kv) => {
-          const [name, value] = kv.split('=');
-          cookies[name] = value;
-          return cookies;
+        .reduce((obj, kv) => {
+          const [k, ...v] = kv.split('=');
+          obj[k] = v.join('=');
+          return obj;
         }, {});
     }
 
-    const cookies = parseCookies();
-    const payload = {
-      event: 'ViewContent',
-      timestamp: new Date().toISOString(),
-      _fbc: cookies._fbc || null,
-      _fbp: cookies._fbp || null
-    };
+    window.addEventListener('load', () => {
+      // ahora sí las cookies ya existen
+      const cookies = parseCookies();
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(console.log)
-    .catch(console.error);
+      const payload = {
+        event:     'ViewContent',
+        timestamp: new Date().toISOString(),
+        _fbc:      cookies._fbc || null,
+        _fbp:      cookies._fbp || null
+      };
+
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(r => r.json())
+      .then(console.log)
+      .catch(console.error);
+    });
   </script>
 </body>
 </html>
+
 
