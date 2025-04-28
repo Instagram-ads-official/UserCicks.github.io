@@ -2,78 +2,59 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Conectando con WhatsApp…</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Página con Facebook Pixel</title>
 
-  <!-- Meta Pixel -->
+  <!-- === Meta Pixel de Facebook === -->
   <script>
+    const PIXEL_ID = '1391288831895635';
     !function(f,b,e,v,n,t,s){
       if(f.fbq) return;
-      n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      n=f.fbq=function(){ n.callMethod?
+        n.callMethod.apply(n, arguments):n.queue.push(arguments) 
+      };
       if(!f._fbq) f._fbq=n;
-      n.push=n; n.loaded=!0; n.version='2.0'; n.queue=[];
+      n.push=n; n.loaded=!0; n.version='2.0';
+      n.queue=[];
       t=b.createElement(e); t.async=!0;
       t.src=v; s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)
-    }(
-      window, document,'script',
+    }(window, document, 'script',
       'https://connect.facebook.net/en_US/fbevents.js'
     );
-    fbq('init', '1391288831895635');
-    fbq('track', 'ViewContent');
+    fbq('init', PIXEL_ID);
   </script>
+  <!-- / Meta Pixel -->
 </head>
 <body>
-  <h1>Redirigiendo a WhatsApp…</h1>
+
+  <h1>Bienvenido a mi página</h1>
+  <p>Este es un ejemplo de integración del Pixel de Facebook + envío de evento al backend.</p>
 
   <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    // 1) Datos iniciales
-    const whatsappNumber = '5491124782877';
-    const mensajeBase     = 'Hola, vengo por el bono de bienvenida del 200%, ¿me creas un usuario?';
+    // Disparar ViewContent en cuanto cargue la página
+    fbq('track', 'ViewContent');
 
-    // 2) Captura fbclid (query string / hash / referrer)
-    const params = new URLSearchParams(window.location.search);
-    let fbclid = params.get('fbclid') || '';
-    if (!fbclid && window.location.hash.includes('fbclid=')) {
-      const hp = new URLSearchParams(window.location.hash.slice(1));
-      fbclid = hp.get('fbclid') || '';
-    }
-    if (!fbclid && document.referrer.includes('fbclid=')) {
-      const refQs = document.referrer.split('?')[1] || '';
-      const rp = new URLSearchParams(refQs);
-      fbclid = rp.get('fbclid') || '';
-    }
-    if (!fbclid) fbclid = 'no_disponible';
+    // Enviar evento al backend (API Gateway), incluyendo la cookie _fbc
+    (function(){
+      const API_URL = 'https://jxfyydlcu7.execute-api.us-east-2.amazonaws.com/Capture_fbc';
+      const payload = {
+        event: 'ViewContent',
+        timestamp: new Date().toISOString()
+      };
 
-    // 3) Generar ID único
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    const id = Array.from(bytes)
-      .map(b => b.toString(16).padStart(2,'0'))
-      .join('');
-
-    // 4) Timestamp
-    const timestamp = new Date().toISOString();
-
-    // 5) Enviar datos a Lambda (API Gateway)
-    const payload = { id, fbclid, timestamp };
-    try {
-      await fetch('https://auo1x1y1li.execute-api.us-east-2.amazonaws.com/prod/visita', {
+      fetch(API_URL, {
         method: 'POST',
+        credentials: 'include',           // Incluye cookies en la petición (p.ej. _fbc)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
-    } catch (err) {
-      console.error('Error al enviar datos a Lambda:', err);
-    }
-
-    // 6) Redirigir a WhatsApp
-    const texto = `${mensajeBase} Mi código es: ${id}`;
-    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(texto)}`;
-    window.location.href = waUrl;
-  });
+      })
+      .then(res => res.json())
+      .then(data => console.log('Respuesta del backend:', data))
+      .catch(err => console.error('Error al enviar al backend:', err));
+    })();
   </script>
+
 </body>
 </html>
